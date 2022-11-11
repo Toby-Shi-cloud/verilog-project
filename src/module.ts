@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 
-namespace funcs {
+namespace _ {
     export function massageError(error: Error & { code?: string }): Error {
         if (error.code === 'ENOENT') {
             return vscode.FileSystemError.FileNotFound();
@@ -80,21 +80,21 @@ function findAll(context: string, target: string, index?: number, matches: numbe
 
 export class Project {
     verilogFiles: string[] = [];
-    verilogModules: Map<string, [Module, boolean]> = new Map;
+    verilogModules: Map<[string, string], [Module, boolean]> = new Map;
     rootModules: Module[] = [];
     includeFiles: [string, vscode.Uri][] = [];
     private actionState = 0;
 
     constructor(private rootPath: string) { }
 
-    async readModuleFromFile(name: string) {
-        const uri = vscode.Uri.file(path.join(this.rootPath, name));
+    async readModuleFromFile(filename: string) {
+        const uri = vscode.Uri.file(path.join(this.rootPath, filename));
         // console.log('reading ' + uri.fsPath);
         const document = await vscode.workspace.openTextDocument(uri);
         const content = document.getText();
         const regex = /module\s+([a-zA-Z_][a-zA-Z_\d]*)\s*(\([\s\S]*?\))?\s*;([\s\S]*?)endmodule/g;
         getMatches(content, regex).forEach((item) => {
-            this.verilogModules.set(item[1], [new Module(item[1], item[3], name, uri), true]);
+            this.verilogModules.set([item[1], filename], [new Module(item[1], item[3], filename, uri), true]);
         });
 
         const regexInc = /`include "(.*?)"/g;
@@ -116,8 +116,8 @@ export class Project {
         // console.log('analyzing ' + module.name);
         const regex = /^\s+([a-zA-Z_][a-zA-Z_\d]*)\s*\([\s\S]*?\)\s*;/;
         this.verilogModules.forEach((value, key) => {
-            findAll(module.content, key).forEach((idx) => {
-                const matcher = regex.exec(module.content.substring(idx + key.length));
+            findAll(module.content, key[0]).forEach((idx) => {
+                const matcher = regex.exec(module.content.substring(idx + key[0].length));
                 if (matcher) {
                     module.subModule.push([matcher[1], value[0]]);
                     value[1] = false;
@@ -131,7 +131,7 @@ export class Project {
             return;
         }
         this.actionState = -1;
-        this.verilogFiles = await funcs.readdir(this.rootPath);
+        this.verilogFiles = await _.readdir(this.rootPath);
         // console.log(this.verilogFiles);
 
         const group1: Promise<void>[] = [];
