@@ -9,7 +9,7 @@ abstract class TreeNode extends vscode.TreeItem {
 
 // Module模块节点
 class ModuleNode extends TreeNode {
-	uri: vscode.Uri | undefined;
+	uri: vscode.Uri;
 
 	constructor(public module: Module, name?: string) {
 		super((name ?? '') + module.name + ' (' + module.filename + ')',

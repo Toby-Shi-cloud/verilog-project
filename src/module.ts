@@ -117,7 +117,21 @@ export class Project {
         const regex = /^\s+([a-zA-Z_][a-zA-Z_\d]*)\s*\([\s\S]*?\)\s*;/;
         this.verilogModules.forEach((value, key) => {
             findAll(module.content, key[0]).forEach((idx) => {
-                const matcher = regex.exec(module.content.substring(idx + key[0].length));
+                const found = module.content.substring(idx + key[0].length);
+                const paramMatch = /^\s*#\s*\(/.exec(found);
+                var ready = found;
+                if (paramMatch) {
+                    const stack: number[] = [];
+                    var cur = paramMatch[0].length;
+                    stack.push(cur);
+                    while (++cur < found.length && stack.length) {
+                        if (found[cur] === '(') { stack.push(cur); }
+                        else if (found[cur] === ')') { stack.pop(); }
+                    }
+                    if (stack.length) { return; }
+                    ready = ' ' + found.substring(cur);
+                }
+                const matcher = regex.exec(ready);
                 if (matcher) {
                     module.subModule.push([matcher[1], value[0]]);
                     value[1] = false;
