@@ -2,7 +2,13 @@
     "name": "verilog-project",
     "displayName": "Verilog Project",
     "description": "Support verilog project. Support jumping to verilog module definition.",
-    "version": "0.0.1",
+    "author": {
+        "name": "Toby Shi",
+        "url": "https://toby-shi-cloud.github.io/"
+    },
+    "preview": true,
+    "license": "MIT",
+    "version": "0.0.2",
     "engines": {
         "vscode": "^1.73.0"
     },
@@ -43,6 +49,14 @@
             {
                 "command": "verilog-project-tree.openFile",
                 "title": "Open File"
+            },
+            {
+                "command": "verilog-project-tree.compile",
+                "title": "Compile Module",
+                "icon": {
+                    "light": "resources/light/gear-solid.svg",
+                    "dark": "resources/dark/gear-solid.png"
+                }
             }
         ],
         "menus": {
@@ -51,6 +65,13 @@
                     "command": "verilog-project-tree.refreshEntry",
                     "when": "view == verilog-project-tree",
                     "group": "navigation"
+                }
+            ],
+            "view/item/context": [
+                {
+                    "command": "verilog-project-tree.compile",
+                    "when": "view == verilog-project-tree && viewItem == module",
+					"group": "inline"
                 }
             ]
         }
@@ -63,8 +84,7 @@
         "compile-tests": "tsc -p . --outDir out",
         "watch-tests": "tsc -p . -w --outDir out",
         "pretest": "npm run compile-tests && npm run compile && npm run lint",
-        "lint": "eslint src --ext ts",
-        "test": "node ./out/test/runTest.js"
+        "lint": "eslint src --ext ts"
     },
     "devDependencies": {
         "@types/glob": "^8.0.0",

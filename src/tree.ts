@@ -8,19 +8,20 @@ abstract class TreeNode extends vscode.TreeItem {
 }
 
 // Module模块节点
-class ModuleNode extends TreeNode {
-	uri: vscode.Uri;
+export class ModuleNode extends TreeNode {
 
 	constructor(public module: Module, name?: string) {
 		super((name ?? '') + module.name + ' (' + module.filename + ')',
 			module.subModule.length ?
 				vscode.TreeItemCollapsibleState.Collapsed :
 				vscode.TreeItemCollapsibleState.None);
-		this.uri = module.fileUri;
-		// this.iconPath = "resources\\V.svg";
+		this.resourceUri = module.fileUri;
 	}
 
-	iconPath = path.join(__filename, '..', '..', 'resources', 'V.svg');
+	iconPath = {
+		light: path.join(__filename, '..', '..', 'resources', 'light', 'verilog.svg'),
+		dark: path.join(__filename, '..', '..', 'resources', 'dark', 'verilog.svg')
+	};
 
 	localCompare(other: TreeNode): number {
 		if (other instanceof IncludeNode) {
@@ -37,12 +38,13 @@ class ModuleNode extends TreeNode {
 
 // Include文件节点
 class IncludeNode extends TreeNode {
-	constructor(public uri: vscode.Uri | undefined, public type: vscode.FileType, label: string) {
+	constructor(uri: vscode.Uri | undefined, public type: vscode.FileType, label: string) {
 		super(label, type === vscode.FileType.Directory ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None);
 		this.iconPath =  type === vscode.FileType.Directory ? {
 			light: path.join(__filename, '..', '..', 'resources', 'light', 'dependency.svg'),
 			dark: path.join(__filename, '..', '..', 'resources', 'dark', 'dependency.svg')
-		} : path.join(__filename, '..', '..', 'resources', 'V.svg');
+		} : undefined;
+		this.resourceUri = uri;
 	}
 
 	localCompare(other: TreeNode): number {
@@ -82,9 +84,13 @@ export class TreeNodeProvider implements vscode.TreeDataProvider<vscode.TreeItem
 	}
 
 	getTreeItem(element: vscode.TreeItem): vscode.TreeItem | Thenable<vscode.TreeItem> {
-		if (element instanceof ModuleNode || element instanceof IncludeNode && element.type === vscode.FileType.File) {
-			element.command = { command: 'verilog-project-tree.openFile', title: "Open File", arguments: [element.uri] };
+		if (element instanceof IncludeNode && element.type === vscode.FileType.File) {
+			element.command = { command: 'verilog-project-tree.openFile', title: "Open File", arguments: [element.resourceUri] };
 			element.contextValue = 'file';
+		} else if (element instanceof ModuleNode) {
+			element.command = { command: 'verilog-project-tree.openFile', title: "Open File", arguments: [element.resourceUri] };
+			// element.command = { command: 'verilog-project-tree.compile', title: "Compile Module", arguments: [element.module] };
+			element.contextValue = 'module';
 		}
 		return element;
 	}

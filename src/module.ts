@@ -152,18 +152,14 @@ export class Project {
         for (let item of this.verilogFiles) {
             group1.push(this.readModuleFromFile(item));
         }
-        for (let task of group1) {
-            await task;
-        }
+        for await (let _ of group1) { }
         // console.log(this.verilogModules);
 
         const group2: Promise<void>[] = [];
         for (let item of this.verilogModules) {
             group2.push(this.analyzeModuleDependence(item[1][0]));
         }
-        for (let task of group2) {
-            await task;
-        }
+        for await (let _ of group2) { }
         for (let item of this.verilogModules) {
             if (item[1][1]) {
                 this.rootModules.push(item[1][0]);
@@ -184,6 +180,35 @@ export class Project {
 
 export class Module {
     subModule: [string, Module][] = [];
+    private static compileTerminal: vscode.Terminal | undefined;
 
     constructor(public name: string, public content: string, public filename: string, public fileUri: vscode.Uri) { }
+
+    async getCompileSet(): Promise<Set<string>> {
+        const fileSet: Set<string> = new Set;
+        fileSet.add(this.fileUri.fsPath);
+        for (const [_, sub] of this.subModule) {
+            if (fileSet.has(sub.fileUri.fsPath)) { continue; }
+            for (const name of await sub.getCompileSet()) {
+                fileSet.add(name);
+            }
+        }
+        return fileSet;
+    }
+
+    async compile() {
+        const fileSet = await this.getCompileSet();
+        const fileList: string[] = [];
+        for (const name of fileSet) {
+            fileList.push('"' + name + '"');
+        }
+        if (!Module.compileTerminal || Module.compileTerminal.exitStatus) {
+            Module.compileTerminal = vscode.window.createTerminal('Verilog Project');
+        }
+        const cmd = 'iverilog ' + fileList.reduce((ans, cur) => {
+            return ans + ' ' + cur;
+        });
+        Module.compileTerminal.show();
+        Module.compileTerminal.sendText(cmd);
+    }
 }
