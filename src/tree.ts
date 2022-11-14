@@ -1,6 +1,6 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { Project, Module } from './module';
+import { Project, Module, Folder } from './module';
 
 // TreeView虚节点
 export abstract class TreeNode extends vscode.TreeItem {
@@ -26,8 +26,8 @@ export class ModuleNode extends TreeNode {
 	// };
 
 	localCompare(other: TreeNode): number {
-		if (other instanceof IncludeNode) {
-			return 1;
+		if (other instanceof FileNode) {
+			return other.type === vscode.FileType.Directory ? 1 : -1;
 		} else if (other instanceof ModuleNode) {
 			if (this.module.name < other.module.name) { return -1; }
 			else if (this.module.name > other.module.name) { return 1; }
@@ -38,18 +38,25 @@ export class ModuleNode extends TreeNode {
 	}
 }
 
-// Include文件节点
-export class IncludeNode extends TreeNode {
-	constructor(uri: vscode.Uri | undefined, public type: vscode.FileType, label: string) {
-		super(label, type === vscode.FileType.Directory ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None);
-		this.iconPath = type === vscode.FileType.Directory ? vscode.ThemeIcon.Folder : vscode.ThemeIcon.File;
+// File文件节点
+export class FileNode extends TreeNode {
+	type: vscode.FileType;
+
+	constructor(uri: vscode.Uri | undefined, label: string, public folder?: Folder) {
+		super(label, folder ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None);
+		this.iconPath = folder ? vscode.ThemeIcon.Folder : vscode.ThemeIcon.File;
+		this.type = folder ? vscode.FileType.Directory : vscode.FileType.File;
+		this.contextValue = folder ? 'folder' : 'file';
 		this.resourceUri = uri;
 	}
 
 	localCompare(other: TreeNode): number {
 		if (other instanceof ModuleNode) {
-			return -1;
-		} else if (other instanceof IncludeNode) {
+			return this.type === vscode.FileType.Directory ? -1 : 1;
+		} else if (other instanceof FileNode) {
+			if (this.type !== other.type) {
+				return this.type === vscode.FileType.Directory ? -1 : 1;
+			}
 			if (this.label! < other.label!) { return -1; }
 			else if (this.label! > other.label!) { return 1; }
 			else { return 0; }
@@ -77,15 +84,13 @@ export class TreeNodeProvider implements vscode.TreeDataProvider<TreeNode>
 	}
 
 	async refresh() {
-		console.log('fresh!');
 		await this.projects?.clear();
 		this._onDidChangeTreeData.fire();
 	}
 
 	getTreeItem(element: TreeNode): TreeNode | Thenable<TreeNode> {
-		if (element instanceof IncludeNode && element.type === vscode.FileType.File) {
+		if (element instanceof FileNode && element.type === vscode.FileType.File) {
 			element.command = { command: 'verilog-project-tree.openFile', title: "Open File", arguments: [element.resourceUri] };
-			element.contextValue = 'file';
 		} else if (element instanceof ModuleNode) {
 			element.command = { command: 'verilog-project-tree.openFile', title: "Open File", arguments: [element.resourceUri] };
 		}
@@ -94,9 +99,11 @@ export class TreeNodeProvider implements vscode.TreeDataProvider<TreeNode>
 
 	async getChildren(element?: TreeNode): Promise<TreeNode[]> {
 		if (element) { // 子节点
-			if (element instanceof IncludeNode && element.type === vscode.FileType.Directory) {
-				return this.projects!.includeFiles.map(
-					(value) => new IncludeNode(value[1], vscode.FileType.File, value[0])
+			if (element instanceof FileNode && element.folder) {
+				return element.folder.map(
+					(value) => value[0] instanceof Folder ?
+					new FileNode(value[1], value[0].name, value[0]) :
+					new FileNode(value[1], value[0])
 				).sort((a, b) => a.localCompare(b));
 			} else if (element instanceof ModuleNode) {
 				return element.module.subModule.map(
@@ -109,9 +116,7 @@ export class TreeNodeProvider implements vscode.TreeDataProvider<TreeNode>
 			await this.projects.waitForAccomplish();
 			// console.log(this.projects.rootModules);
 			const result: TreeNode[] = this.projects.rootModules.map((value) => new ModuleNode(value));
-			if (this.projects.includeFiles.length) {
-				result.push(new IncludeNode(undefined, vscode.FileType.Directory, '`Includes'));
-			}
+			result.push(...this.projects.noneZeroFolder.map((folder) => new FileNode(folder.uri, folder.name, folder)));
 			if (!result.length) {
 				vscode.window.showInformationMessage('No verilog project in this workspace');
 				return [];

@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import {Terminals} from './shells';
-import {Globals} from './configuration';
+import { Terminals } from './shells';
+import { Globals } from './configuration';
 
 namespace _ {
     export function massageError(error: Error & { code?: string }): Error {
@@ -33,18 +33,10 @@ namespace _ {
         }
     }
 
-    function analyzeFiles(dir: string, files: string[]): string[] {
-        return files.filter((item) =>
-            item.endsWith('.v') &&
-            fs.lstatSync(path.join(dir, item)).isFile()
-        );
-    }
-
     export async function readdir(path: string): Promise<string[]> {
-        const $value = await new Promise<string[]>((resolve, reject) => {
+        return new Promise<string[]>((resolve, reject) => {
             fs.readdir(path, (error, files) => handleResult(resolve, reject, error, files));
         });
-        return analyzeFiles(path, $value);
     }
 
     export function exists(path: string): Promise<boolean> {
@@ -80,12 +72,39 @@ function findAll(context: string, target: string, index?: number, matches: numbe
     return matches;
 }
 
+function strEndWith(context: string, target: string[]) {
+    for (const ext of target) {
+        if (context.endsWith(ext)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 export class Project {
     verilogFiles: string[] = [];
     verilogModules: Map<[string, string], [Module, boolean]> = new Map;
     rootModules: Module[] = [];
-    includeFiles: [string, vscode.Uri][] = [];
+    noneZeroFolder: Folder[] = [];
+    private includeFolder: Folder = new Folder('`includes');
+    private docFolder: Folder = new Folder('Documents');
+    private testFolder: Folder = new Folder('TestCases');
+    private toolFolder: Folder = new Folder('Tools');
+    private vcdFolder: Folder = new Folder('VCDs');
     private actionState = 0;
+
+    async clear() {
+        this.verilogFiles = [];
+        this.rootModules = [];
+        this.noneZeroFolder = [];
+        this.verilogModules.clear();
+        this.includeFolder.clear();
+        this.docFolder.clear();
+        this.testFolder.clear();
+        this.toolFolder.clear();
+        this.vcdFolder.clear();
+        this.actionState = 0;
+    }
 
     constructor(private rootPath: string) { }
 
@@ -103,13 +122,13 @@ export class Project {
         getMatches(content, regexInc).forEach((item) => {
             if (this.verilogFiles.indexOf(item[1]) !== -1) {
                 var flag = true;
-                for (let inc of this.includeFiles) {
+                for (let inc of this.includeFolder) {
                     if (inc[0] === item[1]) {
                         flag = false;
                         break;
                     }
                 }
-                flag && this.includeFiles.push([item[1], vscode.Uri.file(path.join(this.rootPath, item[1]))]);
+                flag && this.includeFolder.push([item[1], vscode.Uri.file(path.join(this.rootPath, item[1]))]);
             }
         });
     }
@@ -147,8 +166,27 @@ export class Project {
             return;
         }
         this.actionState = -1;
-        this.verilogFiles = await _.readdir(this.rootPath);
+
+        const rootFiles = await _.readdir(this.rootPath);
+        console.log('Hello from verilog-project');
+        for (const file of rootFiles) {
+            if (fs.lstatSync(path.join(this.rootPath, file)).isFile()) {
+                if (strEndWith(file, ['.pdf', '.md', '.doc', '.docx', '.xls', '.xlsx'])) {
+                    this.docFolder.push([file, vscode.Uri.file(path.join(this.rootPath, file))]);
+                } else if (file.startsWith('code')) {
+                    this.testFolder.push([file, vscode.Uri.file(path.join(this.rootPath, file))]);
+                } else if (strEndWith(file, ['.v', '.vh'])) {
+                    this.verilogFiles.push(file);
+                } else if (strEndWith(file, ['.py', '.c', '.cpp', '.cc', 'java'])) {
+                    this.toolFolder.push([file, vscode.Uri.file(path.join(this.rootPath, file))]);
+                } else if (file.endsWith('.vcd')) {
+                    this.vcdFolder.push([file, vscode.Uri.file(path.join(this.rootPath, file))]);
+                }
+            }
+        }
         // console.log(this.verilogFiles);
+        // console.log(this.docFolder);
+        // console.log(this.testFolder);
 
         const group1: Promise<void>[] = [];
         for (let item of this.verilogFiles) {
@@ -167,16 +205,11 @@ export class Project {
                 this.rootModules.push(item[1][0]);
             }
         }
+
+        this.noneZeroFolder = [this.includeFolder, this.docFolder, this.testFolder, this.toolFolder, this.vcdFolder]
+            .filter((folder) => folder.length !== 0);
         this.actionState = 1;
         // console.log('analyze over!');
-    }
-
-    async clear() {
-        this.verilogFiles = [];
-        this.verilogModules = new Map;
-        this.rootModules = [];
-        this.includeFiles = [];
-        this.actionState = 0;
     }
 }
 
@@ -197,7 +230,6 @@ export class Module {
         return fileSet;
     }
 
-
     async check() {
         const args = ['iverilog', '-s', this.name, '-t', 'null', '-Wall', '*.v'];
         Terminals.terminalSendCommand(args);
@@ -209,11 +241,23 @@ export class Module {
     }
 
     async run() {
-        await this.compile();
-        const args = ['vvp', 'a.out'];
+        const args1 = ['iverilog', '-s', this.name, '-Wall', '-o', Globals.compileOutputFile, '*.v'];
+        const args2 = ['vvp', Globals.compileOutputFile];
         if (Globals.vvpOutputFile !== '') {
-            args.push('>' + Globals.vvpOutputFile);
+            args2.concat('>', Globals.vvpOutputFile);
         }
-        Terminals.terminalSendCommand(args);
+        Terminals.terminalSendCommand(args1.concat(';', 'if($?)', '{', args2, '}'));
+    }
+}
+
+export class Folder extends Array<[Folder | string, vscode.Uri | undefined]> {
+    constructor(public name: string, public uri?: vscode.Uri, ...items: [Folder | string, vscode.Uri | undefined][]) {
+        super(...items);
+    }
+
+    clear() {
+        while (this.length) {
+            this.pop();
+        }
     }
 }

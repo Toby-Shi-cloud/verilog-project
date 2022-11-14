@@ -1,21 +1,22 @@
 {
     "name": "verilog-project",
     "displayName": "Verilog Project",
-    "description": "Support verilog project. Support jumping to verilog module definition.",
+    "description": "Support verilog project. Make iverilog even easier to use.",
     "author": {
         "name": "Toby Shi",
         "url": "https://toby-shi-cloud.github.io/"
     },
     "preview": true,
     "license": "MIT",
-    "version": "0.0.3",
+    "version": "0.0.4",
     "engines": {
         "vscode": "^1.73.0"
     },
     "categories": [
-        "Other"
+        "Programming Languages"
     ],
     "activationEvents": [
+        "workspaceContains:**/*.{v,vh}",
         "onView:verilog-project-tree"
     ],
     "main": "dist/index.js",
@@ -25,7 +26,7 @@
                 {
                     "id": "verilog-project-sidebar",
                     "title": "Verilog Project",
-                    "icon": "resources/V.svg"
+                    "icon": "./resources/V.svg"
                 }
             ]
         },
@@ -42,8 +43,8 @@
                 "command": "verilog-project-tree.refreshEntry",
                 "title": "刷新依赖树",
                 "icon": {
-                    "light": "resources/light/refresh.svg",
-                    "dark": "resources/dark/refresh.svg"
+                    "light": "./resources/light/refresh.svg",
+                    "dark": "./resources/dark/refresh.svg"
                 }
             },
             {
@@ -54,24 +55,24 @@
                 "command": "verilog-project-tree.check",
                 "title": "语法检查",
                 "icon": {
-                    "light": "resources/light/check-circle.svg",
-                    "dark": "resources/dark/check-circle.svg"
+                    "light": "./resources/light/check-circle.svg",
+                    "dark": "./resources/dark/check-circle.svg"
                 }
             },
             {
                 "command": "verilog-project-tree.compile",
                 "title": "编译模块",
                 "icon": {
-                    "light": "resources/light/gear-solid.svg",
-                    "dark": "resources/dark/gear-solid.svg"
+                    "light": "./resources/light/gear-solid.svg",
+                    "dark": "./resources/dark/gear-solid.svg"
                 }
             },
             {
                 "command": "verilog-project-tree.run",
                 "title": "运行模块",
                 "icon": {
-                    "light": "resources/light/play-solid.svg",
-                    "dark": "resources/dark/play-solid.svg"
+                    "light": "./resources/light/play-solid.svg",
+                    "dark": "./resources/dark/play-solid.svg"
                 }
             }
         ],
@@ -107,15 +108,26 @@
                 "verilog-project-tree.compileOutputFile": {
                     "type": "string",
                     "default": "a.out",
-                    "description": "编译输出文件"
+                    "description": "iverilog编译输出文件"
                 },
                 "verilog-project-tree.vvpOutputFile": {
                     "type": "string",
                     "default": "",
-                    "description": "运行输出文件"
+                    "description": "vvp运行输出文件"
                 }
             }
-        }
+        },
+        "languages": [
+            {
+                "id": "verilog",
+                "extensions": [".v", ".vh"],
+                "aliases": ["verilog"],
+                "icon": {
+                    "light": "./resources/light/V.svg",
+                    "dark": "./resources/dark/V.svg"
+                }
+            }
+        ]
     },
     "scripts": {
         "vscode:prepublish": "npm run package",

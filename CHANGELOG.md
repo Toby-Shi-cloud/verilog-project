@@ -4,7 +4,18 @@ All notable changes to the "verilog-project" extension will be documented in thi
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
-## [0.0.2] - 2022-11-13
+## [0.0.4] - 2022-11-15
+
+### Added
+
+- 添加 Verilog 文件图标
+- 在树状图中添加分类支持：包含 ```Documents, TestCases, Tools, VCDs, `includes```
+
+### Fixed
+
+- 修复改变编译位置后，一键运行失败的问题
+  
+## [0.0.3] - 2022-11-14
 
 ### Added
 
