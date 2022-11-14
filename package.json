@@ -8,7 +8,7 @@
     },
     "preview": true,
     "license": "MIT",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "engines": {
         "vscode": "^1.73.0"
     },
@@ -33,14 +33,14 @@
             "verilog-project-sidebar": [
                 {
                     "id": "verilog-project-tree",
-                    "name": "Project"
+                    "name": "Verilog Project"
                 }
             ]
         },
         "commands": [
             {
                 "command": "verilog-project-tree.refreshEntry",
-                "title": "Refresh",
+                "title": "刷新依赖树",
                 "icon": {
                     "light": "resources/light/refresh.svg",
                     "dark": "resources/dark/refresh.svg"
@@ -48,14 +48,30 @@
             },
             {
                 "command": "verilog-project-tree.openFile",
-                "title": "Open File"
+                "title": "在编辑器中打开"
+            },
+            {
+                "command": "verilog-project-tree.check",
+                "title": "语法检查",
+                "icon": {
+                    "light": "resources/light/check-circle.svg",
+                    "dark": "resources/dark/check-circle.svg"
+                }
             },
             {
                 "command": "verilog-project-tree.compile",
-                "title": "Compile Module",
+                "title": "编译模块",
                 "icon": {
                     "light": "resources/light/gear-solid.svg",
-                    "dark": "resources/dark/gear-solid.png"
+                    "dark": "resources/dark/gear-solid.svg"
+                }
+            },
+            {
+                "command": "verilog-project-tree.run",
+                "title": "运行模块",
+                "icon": {
+                    "light": "resources/light/play-solid.svg",
+                    "dark": "resources/dark/play-solid.svg"
                 }
             }
         ],
@@ -69,11 +85,36 @@
             ],
             "view/item/context": [
                 {
+                    "command": "verilog-project-tree.check",
+                    "when": "viewItem == module || viewItem == topModule",
+                    "group": "inline"
+                },
+                {
                     "command": "verilog-project-tree.compile",
-                    "when": "view == verilog-project-tree && viewItem == module",
-					"group": "inline"
+                    "when": "viewItem == module || viewItem == topModule",
+                    "group": "inline"
+                },
+                {
+                    "command": "verilog-project-tree.run",
+                    "when": "viewItem == topModule",
+                    "group": "inline"
                 }
             ]
+        },
+        "configuration": {
+            "title": "编译设置",
+            "properties": {
+                "verilog-project-tree.compileOutputFile": {
+                    "type": "string",
+                    "default": "a.out",
+                    "description": "编译输出文件"
+                },
+                "verilog-project-tree.vvpOutputFile": {
+                    "type": "string",
+                    "default": "",
+                    "description": "运行输出文件"
+                }
+            }
         }
     },
     "scripts": {

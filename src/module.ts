@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
+import {Terminals} from './shells';
+import {Globals} from './configuration';
 
 namespace _ {
     export function massageError(error: Error & { code?: string }): Error {
@@ -180,7 +182,6 @@ export class Project {
 
 export class Module {
     subModule: [string, Module][] = [];
-    private static compileTerminal: vscode.Terminal | undefined;
 
     constructor(public name: string, public content: string, public filename: string, public fileUri: vscode.Uri) { }
 
@@ -196,19 +197,23 @@ export class Module {
         return fileSet;
     }
 
+
+    async check() {
+        const args = ['iverilog', '-s', this.name, '-t', 'null', '-Wall', '*.v'];
+        Terminals.terminalSendCommand(args);
+    }
+
     async compile() {
-        const fileSet = await this.getCompileSet();
-        const fileList: string[] = [];
-        for (const name of fileSet) {
-            fileList.push('"' + name + '"');
+        const args = ['iverilog', '-s', this.name, '-Wall', '-o', Globals.compileOutputFile, '*.v'];
+        Terminals.terminalSendCommand(args);
+    }
+
+    async run() {
+        await this.compile();
+        const args = ['vvp', 'a.out'];
+        if (Globals.vvpOutputFile !== '') {
+            args.push('>' + Globals.vvpOutputFile);
         }
-        if (!Module.compileTerminal || Module.compileTerminal.exitStatus) {
-            Module.compileTerminal = vscode.window.createTerminal('Verilog Project');
-        }
-        const cmd = 'iverilog ' + fileList.reduce((ans, cur) => {
-            return ans + ' ' + cur;
-        });
-        Module.compileTerminal.show();
-        Module.compileTerminal.sendText(cmd);
+        Terminals.terminalSendCommand(args);
     }
 }

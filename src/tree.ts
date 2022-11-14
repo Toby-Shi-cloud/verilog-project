@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import { Project, Module } from './module';
 
 // TreeView虚节点
-abstract class TreeNode extends vscode.TreeItem {
+export abstract class TreeNode extends vscode.TreeItem {
 	abstract localCompare(other: TreeNode): number;
 }
 
@@ -16,12 +16,14 @@ export class ModuleNode extends TreeNode {
 				vscode.TreeItemCollapsibleState.Collapsed :
 				vscode.TreeItemCollapsibleState.None);
 		this.resourceUri = module.fileUri;
+		this.contextValue = !name ? 'topModule' : 'module';
 	}
 
-	iconPath = {
-		light: path.join(__filename, '..', '..', 'resources', 'light', 'verilog.svg'),
-		dark: path.join(__filename, '..', '..', 'resources', 'dark', 'verilog.svg')
-	};
+	iconPath = vscode.ThemeIcon.File;
+	// iconPath = {
+	// 	light: path.join(__filename, '..', '..', 'resources', 'light', 'verilog.svg'),
+	// 	dark: path.join(__filename, '..', '..', 'resources', 'dark', 'verilog.svg')
+	// };
 
 	localCompare(other: TreeNode): number {
 		if (other instanceof IncludeNode) {
@@ -37,13 +39,10 @@ export class ModuleNode extends TreeNode {
 }
 
 // Include文件节点
-class IncludeNode extends TreeNode {
+export class IncludeNode extends TreeNode {
 	constructor(uri: vscode.Uri | undefined, public type: vscode.FileType, label: string) {
 		super(label, type === vscode.FileType.Directory ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None);
-		this.iconPath =  type === vscode.FileType.Directory ? {
-			light: path.join(__filename, '..', '..', 'resources', 'light', 'dependency.svg'),
-			dark: path.join(__filename, '..', '..', 'resources', 'dark', 'dependency.svg')
-		} : undefined;
+		this.iconPath = type === vscode.FileType.Directory ? vscode.ThemeIcon.Folder : vscode.ThemeIcon.File;
 		this.resourceUri = uri;
 	}
 
@@ -61,10 +60,10 @@ class IncludeNode extends TreeNode {
 }
 
 // 树的内容组织管理
-export class TreeNodeProvider implements vscode.TreeDataProvider<vscode.TreeItem>
+export class TreeNodeProvider implements vscode.TreeDataProvider<TreeNode>
 {
-	private _onDidChangeTreeData: vscode.EventEmitter<vscode.TreeItem | undefined | void> = new vscode.EventEmitter<vscode.TreeItem | undefined | void>();
-	readonly onDidChangeTreeData: vscode.Event<vscode.TreeItem | undefined | void> = this._onDidChangeTreeData.event;
+	private _onDidChangeTreeData: vscode.EventEmitter<TreeNode | undefined | void> = new vscode.EventEmitter<TreeNode | undefined | void>();
+	readonly onDidChangeTreeData: vscode.Event<TreeNode | undefined | void> = this._onDidChangeTreeData.event;
 
 	private projects: Project | undefined;
 
@@ -83,19 +82,17 @@ export class TreeNodeProvider implements vscode.TreeDataProvider<vscode.TreeItem
 		this._onDidChangeTreeData.fire();
 	}
 
-	getTreeItem(element: vscode.TreeItem): vscode.TreeItem | Thenable<vscode.TreeItem> {
+	getTreeItem(element: TreeNode): TreeNode | Thenable<TreeNode> {
 		if (element instanceof IncludeNode && element.type === vscode.FileType.File) {
 			element.command = { command: 'verilog-project-tree.openFile', title: "Open File", arguments: [element.resourceUri] };
 			element.contextValue = 'file';
 		} else if (element instanceof ModuleNode) {
 			element.command = { command: 'verilog-project-tree.openFile', title: "Open File", arguments: [element.resourceUri] };
-			// element.command = { command: 'verilog-project-tree.compile', title: "Compile Module", arguments: [element.module] };
-			element.contextValue = 'module';
 		}
 		return element;
 	}
 
-	async getChildren(element?: vscode.TreeItem): Promise<vscode.TreeItem[]> {
+	async getChildren(element?: TreeNode): Promise<TreeNode[]> {
 		if (element) { // 子节点
 			if (element instanceof IncludeNode && element.type === vscode.FileType.Directory) {
 				return this.projects!.includeFiles.map(
