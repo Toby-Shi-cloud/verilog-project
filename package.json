@@ -2,6 +2,8 @@
     "name": "verilog-project",
     "displayName": "Verilog Project",
     "description": "Support verilog project. Make iverilog even easier to use.",
+    "publisher": "Toby Shi",
+    "icon": "resources/V.ico",
     "author": {
         "name": "Toby Shi",
         "url": "https://toby-shi-cloud.github.io/"

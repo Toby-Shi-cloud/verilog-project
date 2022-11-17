@@ -56,6 +56,10 @@ export class FileNode extends TreeNode {
 		} else if (other instanceof FileNode) {
 			if (this.type !== other.type) {
 				return this.type === vscode.FileType.Directory ? -1 : 1;
+			} else if (!this.resourceUri && other.resourceUri) {
+				return 1;
+			} else if (this.resourceUri && !other.resourceUri) {
+				return -1;
 			}
 			if (this.label! < other.label!) { return -1; }
 			else if (this.label! > other.label!) { return 1; }
@@ -67,10 +71,11 @@ export class FileNode extends TreeNode {
 }
 
 // 树的内容组织管理
-export class TreeNodeProvider implements vscode.TreeDataProvider<TreeNode>
-{
+export class TreeNodeProvider implements vscode.TreeDataProvider<TreeNode>, vscode.FileSystemProvider {
 	private _onDidChangeTreeData: vscode.EventEmitter<TreeNode | undefined | void> = new vscode.EventEmitter<TreeNode | undefined | void>();
 	readonly onDidChangeTreeData: vscode.Event<TreeNode | undefined | void> = this._onDidChangeTreeData.event;
+	private _onDidChangeFile: vscode.EventEmitter<vscode.FileChangeEvent[]> = new vscode.EventEmitter<vscode.FileChangeEvent[]>;
+	readonly onDidChangeFile: vscode.Event<vscode.FileChangeEvent[]> = this._onDidChangeFile.event;
 
 	private projects: Project | undefined;
 
@@ -81,6 +86,42 @@ export class TreeNodeProvider implements vscode.TreeDataProvider<TreeNode>
 		} else {
 			this.projects = new Project(rootPath);
 		}
+	}
+
+	watch(uri: vscode.Uri, options: { readonly recursive: boolean; readonly excludes: readonly string[]; }): vscode.Disposable {
+		throw new Error('Method not implemented.');
+	}
+
+	stat(uri: vscode.Uri): vscode.FileStat | Thenable<vscode.FileStat> {
+		throw new Error('Method not implemented.');
+	}
+
+	readDirectory(uri: vscode.Uri): [string, vscode.FileType][] | Thenable<[string, vscode.FileType][]> {
+		throw new Error('Method not implemented.');
+	}
+
+	createDirectory(uri: vscode.Uri): void | Thenable<void> {
+		throw new Error('Method not implemented.');
+	}
+
+	readFile(uri: vscode.Uri): Uint8Array | Thenable<Uint8Array> {
+		throw new Error('Method not implemented.');
+	}
+
+	writeFile(uri: vscode.Uri, content: Uint8Array, options: { readonly create: boolean; readonly overwrite: boolean; }): void | Thenable<void> {
+		throw new Error('Method not implemented.');
+	}
+
+	delete(uri: vscode.Uri, options: { readonly recursive: boolean; }): void | Thenable<void> {
+		throw new Error('Method not implemented.');
+	}
+
+	rename(oldUri: vscode.Uri, newUri: vscode.Uri, options: { readonly overwrite: boolean; }): void | Thenable<void> {
+		throw new Error('Method not implemented.');
+	}
+	
+	copy?(source: vscode.Uri, destination: vscode.Uri, options: { readonly overwrite: boolean; }): void | Thenable<void> {
+		throw new Error('Method not implemented.');
 	}
 
 	async refresh() {
@@ -100,10 +141,11 @@ export class TreeNodeProvider implements vscode.TreeDataProvider<TreeNode>
 	async getChildren(element?: TreeNode): Promise<TreeNode[]> {
 		if (element) { // 子节点
 			if (element instanceof FileNode && element.folder) {
+				await element.folder.readdir();
 				return element.folder.map(
 					(value) => value[0] instanceof Folder ?
-					new FileNode(value[1], value[0].name, value[0]) :
-					new FileNode(value[1], value[0])
+						new FileNode(value[1], value[0].name, value[0]) :
+						new FileNode(value[1], value[0])
 				).sort((a, b) => a.localCompare(b));
 			} else if (element instanceof ModuleNode) {
 				return element.module.subModule.map(
@@ -116,7 +158,8 @@ export class TreeNodeProvider implements vscode.TreeDataProvider<TreeNode>
 			await this.projects.waitForAccomplish();
 			// console.log(this.projects.rootModules);
 			const result: TreeNode[] = this.projects.rootModules.map((value) => new ModuleNode(value));
-			result.push(...this.projects.noneZeroFolder.map((folder) => new FileNode(folder.uri, folder.name, folder)));
+			result.push(...this.projects.noneZeroFolders.map((folder) => new FileNode(folder.uri, folder.name, folder)));
+			result.push(...this.projects.otherFolders.map((folder) => new FileNode(folder.uri, folder.name, folder)));
 			if (!result.length) {
 				vscode.window.showInformationMessage('No verilog project in this workspace');
 				return [];

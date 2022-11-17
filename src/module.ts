@@ -85,18 +85,22 @@ export class Project {
     verilogFiles: string[] = [];
     verilogModules: Map<[string, string], [Module, boolean]> = new Map;
     rootModules: Module[] = [];
-    noneZeroFolder: Folder[] = [];
+    noneZeroFolders: Folder[] = [];
+    otherFolders: Folder[] = [];
     private includeFolder: Folder = new Folder('`includes');
     private docFolder: Folder = new Folder('Documents');
     private testFolder: Folder = new Folder('TestCases');
     private toolFolder: Folder = new Folder('Tools');
     private vcdFolder: Folder = new Folder('VCDs');
+    private otherFilesFolder: Folder = new Folder('OtherFiles');
     private actionState = 0;
 
     async clear() {
         this.verilogFiles = [];
         this.rootModules = [];
-        this.noneZeroFolder = [];
+        this.otherFolders = [];
+        this.noneZeroFolders = [];
+        this.otherFilesFolder.clear();
         this.verilogModules.clear();
         this.includeFolder.clear();
         this.docFolder.clear();
@@ -181,7 +185,11 @@ export class Project {
                     this.toolFolder.push([file, vscode.Uri.file(path.join(this.rootPath, file))]);
                 } else if (file.endsWith('.vcd')) {
                     this.vcdFolder.push([file, vscode.Uri.file(path.join(this.rootPath, file))]);
+                } else {
+                    this.otherFilesFolder.push([file, vscode.Uri.file(path.join(this.rootPath, file))]);
                 }
+            } else {
+                this.otherFolders.push(new Folder(file, vscode.Uri.file(path.join(this.rootPath, file))));
             }
         }
         // console.log(this.verilogFiles);
@@ -206,7 +214,7 @@ export class Project {
             }
         }
 
-        this.noneZeroFolder = [this.includeFolder, this.docFolder, this.testFolder, this.toolFolder, this.vcdFolder]
+        this.noneZeroFolders = [this.includeFolder, this.docFolder, this.testFolder, this.toolFolder, this.vcdFolder, this.otherFilesFolder]
             .filter((folder) => folder.length !== 0);
         this.actionState = 1;
         // console.log('analyze over!');
@@ -258,6 +266,18 @@ export class Folder extends Array<[Folder | string, vscode.Uri | undefined]> {
     clear() {
         while (this.length) {
             this.pop();
+        }
+    }
+
+    async readdir() {
+        if (this.uri) {
+            const files = await _.readdir(this.uri.fsPath);
+            for (const filename of files) {
+                const filepath = path.join(this.uri.fsPath, filename);
+                fs.lstatSync(filepath).isDirectory() ?
+                this.push([new Folder(filename, vscode.Uri.file(filepath)), vscode.Uri.file(filepath)]):
+                this.push([filename, vscode.Uri.file(filepath)]);
+            }
         }
     }
 }

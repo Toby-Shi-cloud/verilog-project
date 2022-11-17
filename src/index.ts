@@ -22,7 +22,7 @@ export function activate(context: vscode.ExtensionContext) {
 	const projectTreeProvider = new TreeNodeProvider(rootPath);
 	vscode.window.registerTreeDataProvider('verilog-project-tree', projectTreeProvider);
 	vscode.commands.registerCommand('verilog-project-tree.refreshEntry', () => projectTreeProvider.refresh());
-	vscode.commands.registerCommand('verilog-project-tree.openFile', (resource: vscode.Uri) => vscode.window.showTextDocument(resource));
+	vscode.commands.registerCommand('verilog-project-tree.openFile', (resource: vscode.Uri) => vscode.commands.executeCommand('vscode.openFolder', resource));
 	vscode.commands.registerCommand('verilog-project-tree.compile', (node: ModuleNode) => node.module.compile());
 	vscode.commands.registerCommand('verilog-project-tree.run', (node: ModuleNode) => node.module.run());
 	vscode.commands.registerCommand('verilog-project-tree.check', (node: ModuleNode) => node.module.check());
