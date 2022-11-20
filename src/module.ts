@@ -250,11 +250,15 @@ export class Module {
 
     async run() {
         const args1 = ['iverilog', '-s', this.name, '-Wall', '-o', Globals.compileOutputFile, '*.v'];
-        const args2 = ['vvp', Globals.compileOutputFile];
+        var args2 = ['vvp', Globals.compileOutputFile];
         if (Globals.vvpOutputFile !== '') {
-            args2.concat('>', Globals.vvpOutputFile);
+            args2 = args2.concat('>', Globals.vvpOutputFile);
         }
-        Terminals.terminalSendCommand(args1.concat(';', 'if($?)', '{', args2, '}'));
+        if (vscode.env.shell.endsWith('.exe')) {
+            Terminals.terminalSendCommand(args1.concat('; if($?) { ', args2, ' }'));
+        } else {
+            Terminals.terminalSendCommand(args1.concat('; if(($?==0)); then ', args2, '; fi'));
+        }
     }
 }
 

@@ -8,7 +8,7 @@ export class Globals {
         Globals.compileOutputFile = '"' + vscode.workspace.getConfiguration().get('verilog-project-tree.compileOutputFile')! + '"';
         Globals.vvpOutputFile = vscode.workspace.getConfiguration().get('verilog-project-tree.vvpOutputFile')!;
         if (Globals.vvpOutputFile !== '') {
-            Globals.vvpOutputFile = '"' + Globals + '"';
+            Globals.vvpOutputFile = '"' + Globals.vvpOutputFile + '"';
         }
     }
 }

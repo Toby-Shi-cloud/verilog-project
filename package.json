@@ -2,7 +2,7 @@
     "name": "verilog-project",
     "displayName": "Verilog Project",
     "description": "Support verilog project. Make iverilog even easier to use.",
-    "publisher": "Toby Shi",
+    "publisher": "TobyShi",
     "icon": "resources/V.ico",
     "author": {
         "name": "Toby Shi",
@@ -10,7 +10,7 @@
     },
     "preview": true,
     "license": "MIT",
-    "version": "0.0.4",
+    "version": "0.0.5",
     "engines": {
         "vscode": "^1.73.0"
     },

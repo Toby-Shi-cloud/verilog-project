@@ -4,6 +4,12 @@ All notable changes to the "verilog-project" extension will be documented in thi
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## [0.0.4] - 2022-11-21
+
+### Fixed
+
+- 修复运行错误
+
 ## [0.0.4] - 2022-11-15
 
 ### Added
