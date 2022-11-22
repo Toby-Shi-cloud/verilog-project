@@ -10,7 +10,7 @@
     },
     "preview": true,
     "license": "MIT",
-    "version": "0.0.5",
+    "version": "0.0.6",
     "engines": {
         "vscode": "^1.73.0"
     },
@@ -50,8 +50,8 @@
                 }
             },
             {
-                "command": "verilog-project-tree.openFile",
-                "title": "在编辑器中打开"
+                "command": "verilog-project-tree.openModule",
+                "title": "在编辑器中打开模块"
             },
             {
                 "command": "verilog-project-tree.check",

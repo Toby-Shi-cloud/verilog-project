@@ -4,7 +4,17 @@ All notable changes to the "verilog-project" extension will be documented in thi
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
-## [0.0.4] - 2022-11-21
+## [0.0.6] - 2022-11-22
+
+### Added
+
+- 新增点击模块跳转到模块所在行
+
+### Fixed
+
+- 修复特定情况下依赖关系寻找错误
+  
+## [0.0.5] - 2022-11-21
 
 ### Fixed
 

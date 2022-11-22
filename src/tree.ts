@@ -131,9 +131,9 @@ export class TreeNodeProvider implements vscode.TreeDataProvider<TreeNode>, vsco
 
 	getTreeItem(element: TreeNode): TreeNode | Thenable<TreeNode> {
 		if (element instanceof FileNode && element.type === vscode.FileType.File) {
-			element.command = { command: 'verilog-project-tree.openFile', title: "Open File", arguments: [element.resourceUri] };
+			element.command = { command: 'vscode.openFolder', title: "Open File", arguments: [element.resourceUri] };
 		} else if (element instanceof ModuleNode) {
-			element.command = { command: 'verilog-project-tree.openFile', title: "Open File", arguments: [element.resourceUri] };
+			element.command = { command: 'verilog-project-tree.openModule', title: "Open File", arguments: [element.resourceUri, element.module.line] };
 		}
 		return element;
 	}

@@ -81,6 +81,16 @@ function strEndWith(context: string, target: string[]) {
     return false;
 }
 
+function whichLine(context: string) {
+    var count = 0;
+    for (const c of context) {
+        if (c === '\n') {
+            count += 1;
+        }
+    }
+    return count;
+}
+
 export class Project {
     verilogFiles: string[] = [];
     verilogModules: Map<[string, string], [Module, boolean]> = new Map;
@@ -119,7 +129,8 @@ export class Project {
         const content = document.getText();
         const regex = /module\s+([a-zA-Z_][a-zA-Z_\d]*)\s*(\([\s\S]*?\))?\s*;([\s\S]*?)endmodule/g;
         getMatches(content, regex).forEach((item) => {
-            this.verilogModules.set([item[1], filename], [new Module(item[1], item[3], filename, uri), true]);
+            const line = whichLine(content.substring(0, item.index));
+            this.verilogModules.set([item[1], filename], [new Module(item[1], item[3], filename, uri, line), true]);
         });
 
         const regexInc = /`include "(.*?)"/g;
@@ -142,6 +153,9 @@ export class Project {
         const regex = /^\s+([a-zA-Z_][a-zA-Z_\d]*)\s*\([\s\S]*?\)\s*;/;
         this.verilogModules.forEach((value, key) => {
             findAll(module.content, key[0]).forEach((idx) => {
+                if (idx > 0 && module.content[idx-1].match(/[0-9a-zA-Z_]/)) {
+                    return;
+                } // 如果前面有东西，就不是名字
                 const found = module.content.substring(idx + key[0].length);
                 const paramMatch = /^\s*#\s*\(/.exec(found);
                 var ready = found;
@@ -224,7 +238,7 @@ export class Project {
 export class Module {
     subModule: [string, Module][] = [];
 
-    constructor(public name: string, public content: string, public filename: string, public fileUri: vscode.Uri) { }
+    constructor(public name: string, public content: string, public filename: string, public fileUri: vscode.Uri, public line: number) { }
 
     async getCompileSet(): Promise<Set<string>> {
         const fileSet: Set<string> = new Set;
