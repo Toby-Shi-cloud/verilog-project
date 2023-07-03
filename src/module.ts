@@ -271,7 +271,7 @@ export class Module {
         if (vscode.env.shell.endsWith('.exe')) {
             Terminals.terminalSendCommand(args1.concat('; if($?) { ', args2, ' }'));
         } else {
-            Terminals.terminalSendCommand(args1.concat('; if(($?==0)); then ', args2, '; fi'));
+            Terminals.terminalSendCommand(args1.concat(' && ', args2));
         }
     }
 }
