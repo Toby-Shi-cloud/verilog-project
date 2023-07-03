@@ -2,6 +2,7 @@
     "name": "verilog-project",
     "displayName": "Verilog Project",
     "description": "Support verilog project. Make iverilog even easier to use.",
+    "repository": "https://github.com/Toby-Shi-cloud/verilog-project",
     "publisher": "TobyShi",
     "icon": "resources/V.ico",
     "author": {
@@ -122,8 +123,13 @@
         "languages": [
             {
                 "id": "verilog",
-                "extensions": [".v", ".vh"],
-                "aliases": ["verilog"],
+                "extensions": [
+                    ".v",
+                    ".vh"
+                ],
+                "aliases": [
+                    "verilog"
+                ],
                 "icon": {
                     "light": "./resources/light/V.svg",
                     "dark": "./resources/dark/V.svg"
@@ -156,5 +162,8 @@
         "typescript": "^4.8.4",
         "webpack": "^5.74.0",
         "webpack-cli": "^4.10.0"
+    },
+    "dependencies": {
+        "@vscode/vsce": "^2.19.0"
     }
 }
